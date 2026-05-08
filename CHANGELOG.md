@@ -24,3 +24,4 @@ All notable changes to PredTibo will be documented in this file.
 
 - Prevent repeated ingestion runs from duplicating signals for the same source item.
 - Add copy-safety tests to block guaranteed-reset claims.
+- Force no-store responses for write and cron API routes.

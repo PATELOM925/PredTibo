@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabaseNotConfiguredPayload, getSupabaseAdmin } from "@/lib/db/server";
+import { noStoreJson } from "@/lib/http/no-store";
 import { getClientFingerprint } from "@/lib/security/request";
 
 export const runtime = "nodejs";
@@ -44,19 +45,19 @@ function currentWindowStart() {
 export async function POST(request: NextRequest) {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return NextResponse.json(getDatabaseNotConfiguredPayload(), { status: 503 });
+    return noStoreJson(getDatabaseNotConfiguredPayload(), { status: 503 });
   }
 
   let payload: PredictionPayload;
   try {
     payload = (await request.json()) as PredictionPayload;
   } catch {
-    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+    return noStoreJson({ error: "invalid_json" }, { status: 400 });
   }
 
   const parsed = parsePayload(payload);
   if (!parsed.ok) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
+    return noStoreJson({ error: parsed.error }, { status: 400 });
   }
 
   let rateLimitHash: string;
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
   try {
     ({ rateLimitHash, userAgentHash } = getClientFingerprint(request));
   } catch {
-    return NextResponse.json({ error: "rate_limit_salt_missing" }, { status: 500 });
+    return noStoreJson({ error: "rate_limit_salt_missing" }, { status: 500 });
   }
 
   const windowStart = currentWindowStart();
@@ -76,11 +77,11 @@ export async function POST(request: NextRequest) {
   });
 
   if (rateLimitError) {
-    return NextResponse.json({ error: "rate_limit_failed" }, { status: 500 });
+    return noStoreJson({ error: "rate_limit_failed" }, { status: 500 });
   }
 
   if (!allowed) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    return noStoreJson({ error: "rate_limited" }, { status: 429 });
   }
 
   const { data, error } = await admin
@@ -97,8 +98,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: "prediction_insert_failed" }, { status: 500 });
+    return noStoreJson({ error: "prediction_insert_failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, predictionId: data.id, createdAt: data.created_at }, { status: 201 });
+  return noStoreJson({ ok: true, predictionId: data.id, createdAt: data.created_at }, { status: 201 });
 }
