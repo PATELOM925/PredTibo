@@ -25,13 +25,27 @@ export const metadata: Metadata = {
   },
 };
 
+const themeScript = `
+  (function () {
+    try {
+      var theme = window.localStorage.getItem("predtibo.theme") || "dark";
+      document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+    } catch (error) {
+      document.documentElement.dataset.theme = "dark";
+    }
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );

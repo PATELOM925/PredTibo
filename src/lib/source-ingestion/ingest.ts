@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SourceRow } from "@/lib/db/types";
+import type { SupabaseConfigState } from "@/lib/db/server";
 import { extractSignalsFromText } from "./extract";
 import { isRestrictedPlatform, seedSources } from "./sources";
-import type { IngestionSummary, SeedSource } from "./types";
+import type { IngestedItem, IngestionSummary, SeedSource } from "./types";
 
 async function upsertSource(admin: SupabaseClient, source: SeedSource) {
   const { data, error } = await admin
@@ -18,7 +19,9 @@ async function upsertSource(admin: SupabaseClient, source: SeedSource) {
   return data;
 }
 
-function hasRequiredCredentials(source: SourceRow) {
+type SourceLike = Pick<SourceRow, "platform" | "crawl_policy" | "is_active" | "url" | "name">;
+
+function hasRequiredCredentials(source: SourceLike) {
   if (source.platform === "x") {
     return Boolean(process.env.X_BEARER_TOKEN);
   }
@@ -30,7 +33,7 @@ function hasRequiredCredentials(source: SourceRow) {
   return true;
 }
 
-async function fetchPublicSourceText(source: SourceRow) {
+async function fetchPublicSourceText(source: SourceLike) {
   if (source.crawl_policy === "disabled" || !source.is_active) {
     return { status: "skipped" as const, reason: "source_disabled", text: "" };
   }
@@ -62,7 +65,88 @@ async function fetchPublicSourceText(source: SourceRow) {
   return { status: "fetched" as const, reason: "ok", text: await response.text() };
 }
 
-export async function ingestConfiguredSources(admin: SupabaseClient): Promise<IngestionSummary> {
+async function persistIngestionResultViaRpc(
+  db: SupabaseClient,
+  config: Extract<SupabaseConfigState, { configured: true; mode: "server_rpc" }>,
+  source: SeedSource,
+  fetched: { status: string; reason: string },
+  item: IngestedItem | null,
+) {
+  const { data, error } = await db.rpc("persist_ingestion_result_from_server", {
+    p_server_secret: config.serverActionSecret,
+    p_source: source,
+    p_fetch_status: fetched.status,
+    p_fetch_reason: fetched.reason,
+    p_item: item
+      ? {
+          external_id: item.external_id,
+          url: item.url,
+          author_name: item.author_name,
+          author_handle: item.author_handle,
+          title: item.title,
+          excerpt: item.excerpt,
+          content_hash: item.content_hash,
+          raw_metadata: item.raw_metadata,
+          fetch_status: item.fetch_status,
+          error_code: item.error_code,
+          published_at: item.published_at,
+        }
+      : null,
+    p_signals: item?.signals ?? [],
+  });
+
+  if (error) {
+    throw new Error(`Failed to persist ingestion result for ${source.url}: ${error.message}`);
+  }
+
+  return data as { ok?: boolean; itemStored?: boolean; signalsStored?: number; error?: string } | null;
+}
+
+async function ingestWithServerRpc(
+  db: SupabaseClient,
+  config: Extract<SupabaseConfigState, { configured: true; mode: "server_rpc" }>,
+): Promise<IngestionSummary> {
+  const summary: IngestionSummary = {
+    sourcesChecked: 0,
+    itemsStored: 0,
+    signalsStored: 0,
+    skipped: [],
+  };
+
+  for (const seedSource of seedSources) {
+    summary.sourcesChecked += 1;
+
+    const fetched = await fetchPublicSourceText(seedSource);
+    if (fetched.status !== "fetched") {
+      summary.skipped.push({ source: seedSource.name, reason: fetched.reason });
+      await persistIngestionResultViaRpc(db, config, seedSource, fetched, null);
+      continue;
+    }
+
+    const item = extractSignalsFromText(seedSource, fetched.text);
+    const result = await persistIngestionResultViaRpc(db, config, seedSource, fetched, item);
+
+    if (!result?.ok) {
+      throw new Error(`Failed to persist ingestion result for ${seedSource.url}: ${result?.error ?? "unknown_error"}`);
+    }
+
+    if (result.itemStored) {
+      summary.itemsStored += 1;
+    }
+    summary.signalsStored += result.signalsStored ?? 0;
+  }
+
+  return summary;
+}
+
+export async function ingestConfiguredSources(
+  admin: SupabaseClient,
+  config: Extract<SupabaseConfigState, { configured: true }>,
+): Promise<IngestionSummary> {
+  if (config.mode === "server_rpc") {
+    return ingestWithServerRpc(admin, config);
+  }
+
   const summary: IngestionSummary = {
     sourcesChecked: 0,
     itemsStored: 0,

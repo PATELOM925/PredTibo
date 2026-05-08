@@ -28,10 +28,20 @@ export type Database = {
         Insert: UserPredictionInsert;
         Update: Partial<UserPredictionInsert>;
       };
+      community_messages: {
+        Row: CommunityMessageRow;
+        Insert: CommunityMessageInsert;
+        Update: Partial<CommunityMessageInsert>;
+      };
       prediction_submission_windows: {
         Row: PredictionSubmissionWindowRow;
         Insert: PredictionSubmissionWindowInsert;
         Update: Partial<PredictionSubmissionWindowInsert>;
+      };
+      rate_limit_windows: {
+        Row: RateLimitWindowRow;
+        Insert: RateLimitWindowInsert;
+        Update: Partial<RateLimitWindowInsert>;
       };
     };
     Views: Record<string, never>;
@@ -133,6 +143,19 @@ export type UserPredictionRow = {
 export type UserPredictionInsert = Omit<UserPredictionRow, "id" | "created_at" | "moderation_status"> &
   Partial<Pick<UserPredictionRow, "id" | "created_at" | "moderation_status">>;
 
+export type CommunityMessageRow = {
+  id: string;
+  display_name: string | null;
+  body: string;
+  rate_limit_hash: string;
+  user_agent_hash: string | null;
+  moderation_status: "pending" | "approved" | "rejected";
+  created_at: string;
+};
+
+export type CommunityMessageInsert = Omit<CommunityMessageRow, "id" | "created_at" | "moderation_status"> &
+  Partial<Pick<CommunityMessageRow, "id" | "created_at" | "moderation_status">>;
+
 export type PredictionSubmissionWindowRow = {
   rate_limit_hash: string;
   window_start: string;
@@ -141,3 +164,12 @@ export type PredictionSubmissionWindowRow = {
 };
 
 export type PredictionSubmissionWindowInsert = PredictionSubmissionWindowRow;
+
+export type RateLimitWindowRow = {
+  rate_limit_key: string;
+  window_start: string;
+  action_count: number;
+  updated_at: string;
+};
+
+export type RateLimitWindowInsert = RateLimitWindowRow;

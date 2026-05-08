@@ -1,43 +1,70 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-let adminClient: SupabaseClient | null = null;
+let serverClient: SupabaseClient | null = null;
 
 export type SupabaseConfigState =
-  | { configured: true; url: string; serviceKey: string }
-  | { configured: false; reason: "missing_url" | "missing_service_key" };
+  | {
+      configured: true;
+      url: string;
+      key: string;
+      mode: "service_role";
+      serverActionSecret: string | null;
+    }
+  | {
+      configured: true;
+      url: string;
+      key: string;
+      mode: "server_rpc";
+      serverActionSecret: string;
+    }
+  | { configured: false; reason: "missing_url" | "missing_supabase_key" | "missing_server_action_secret" };
 
 export function getSupabaseConfigState(): SupabaseConfigState {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serverActionSecret = process.env.SERVER_ACTION_SECRET ?? null;
+  const key = serviceKey ?? publishableKey;
 
   if (!url) {
     return { configured: false, reason: "missing_url" };
   }
 
-  if (!serviceKey) {
-    return { configured: false, reason: "missing_service_key" };
+  if (!key) {
+    return { configured: false, reason: "missing_supabase_key" };
   }
 
-  return { configured: true, url, serviceKey };
+  if (serviceKey) {
+    return { configured: true, url, key: serviceKey, mode: "service_role", serverActionSecret };
+  }
+
+  if (!serverActionSecret) {
+    return { configured: false, reason: "missing_server_action_secret" };
+  }
+
+  return { configured: true, url, key, mode: "server_rpc", serverActionSecret };
 }
 
-export function getSupabaseAdmin() {
+export function getSupabaseServer() {
   const config = getSupabaseConfigState();
   if (!config.configured) {
     return null;
   }
 
-  if (!adminClient) {
-    adminClient = createClient(config.url, config.serviceKey, {
+  if (!serverClient) {
+    serverClient = createClient(config.url, config.key, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
     });
   }
 
-  return adminClient;
+  return serverClient;
 }
+
+export const getSupabaseAdmin = getSupabaseServer;
 
 export function getDatabaseNotConfiguredPayload() {
   const config = getSupabaseConfigState();

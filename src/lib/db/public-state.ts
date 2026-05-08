@@ -1,7 +1,7 @@
 import { fallbackPublicState } from "@/lib/prediction-engine/fallback";
 import type { PublicPredictionState, ScoringInputSignal } from "@/lib/prediction-engine/types";
 import { scoreSignals } from "@/lib/prediction-engine/scoring";
-import { getSupabaseAdmin } from "./server";
+import { getSupabaseConfigState, getSupabaseServer } from "./server";
 
 function formatDate(iso: string) {
   const date = new Date(iso);
@@ -36,12 +36,12 @@ function resetMeterLabel(probability: number) {
 }
 
 export async function getLatestPublicState(): Promise<PublicPredictionState> {
-  const admin = getSupabaseAdmin();
-  if (!admin) {
+  const db = getSupabaseServer();
+  if (!db) {
     return fallbackPublicState;
   }
 
-  const { data: latestRun, error } = await admin
+  const { data: latestRun, error } = await db
     .from("model_runs")
     .select("*")
     .eq("is_public", true)
@@ -57,7 +57,7 @@ export async function getLatestPublicState(): Promise<PublicPredictionState> {
     return fallbackPublicState;
   }
 
-  const { data: signals, error: signalError } = await admin
+  const { data: signals, error: signalError } = await db
     .from("signals")
     .select("*")
     .in("id", latestRun.evidence_signal_ids);
@@ -98,12 +98,13 @@ export async function getLatestPublicState(): Promise<PublicPredictionState> {
 }
 
 export async function createAndStoreModelRun() {
-  const admin = getSupabaseAdmin();
-  if (!admin) {
+  const config = getSupabaseConfigState();
+  const db = getSupabaseServer();
+  if (!config.configured || !db) {
     return null;
   }
 
-  const { data, error } = await admin
+  const { data, error } = await db
     .from("signals")
     .select("*")
     .order("created_at", { ascending: false })
@@ -127,20 +128,34 @@ export async function createAndStoreModelRun() {
   }));
 
   const scored = scoreSignals(signals);
-  const { data: inserted, error: insertError } = await admin
-    .from("model_runs")
-    .insert({
-      model_version: scored.modelVersion,
-      target_date: scored.targetIso,
-      confidence_label: scored.confidence,
-      confidence_band_days: scored.confidenceBandDays,
-      reset_signal_probability: scored.resetSignalProbability,
-      rationale: scored.rationale,
-      evidence_signal_ids: scored.evidence.map((item) => item.id),
-      is_public: true,
-    })
-    .select("*")
-    .single();
+  const evidenceSignalIds = scored.evidence.map((item) => item.id);
+
+  const { data: inserted, error: insertError } =
+    config.mode === "server_rpc"
+      ? await db.rpc("insert_model_run_from_server", {
+          p_server_secret: config.serverActionSecret,
+          p_model_version: scored.modelVersion,
+          p_target_date: scored.targetIso,
+          p_confidence_label: scored.confidence,
+          p_confidence_band_days: scored.confidenceBandDays,
+          p_reset_signal_probability: scored.resetSignalProbability,
+          p_rationale: scored.rationale,
+          p_evidence_signal_ids: evidenceSignalIds,
+        })
+      : await db
+          .from("model_runs")
+          .insert({
+            model_version: scored.modelVersion,
+            target_date: scored.targetIso,
+            confidence_label: scored.confidence,
+            confidence_band_days: scored.confidenceBandDays,
+            reset_signal_probability: scored.resetSignalProbability,
+            rationale: scored.rationale,
+            evidence_signal_ids: evidenceSignalIds,
+            is_public: true,
+          })
+          .select("*")
+          .single();
 
   if (insertError) {
     throw new Error(`Could not store model run: ${insertError.message}`);

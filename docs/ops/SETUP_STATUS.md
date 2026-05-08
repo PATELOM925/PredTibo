@@ -11,20 +11,22 @@ Last updated: 2026-05-08
 - Public reads verified with Vercel prerender/CDN headers.
 - Cron endpoints reject unauthenticated requests.
 - Submission route fails closed when Supabase is not configured.
+- Supabase connector is available, and the empty project `PATELOM925's Project` was selected for PredTibo.
+- Supabase V2 migrations are applied to project `zpspjezeyvjcyurcngou`.
+- Production Vercel env vars are set for Supabase URL, publishable key, server action secret, cron secret, and rate-limit salt.
+- Direct anonymous table writes are blocked; direct reads cannot select community rate-limit hashes.
 
 ## Blocked
 
 - Vercel Git integration did not connect from CLI. The local deployment works, but push-to-deploy needs the Vercel GitHub app to have access to `PATELOM925/PredTibo`. Tracking: https://github.com/PATELOM925/PredTibo/issues/1
-- Supabase live project setup is not applied yet. The migration is ready, but the available CLI paths are blocked by missing Supabase auth/tooling and local Docker/Xcode toolchain issues. Tracking: https://github.com/PATELOM925/PredTibo/issues/2
+- Service-role key retrieval is blocked by Supabase account privileges, so production uses publishable key plus `SERVER_ACTION_SECRET` guarded RPCs instead. Remaining Supabase advisor warnings are for intentional public read objects and public RPC endpoints protected by the server action secret. Tracking: https://github.com/PATELOM925/PredTibo/issues/2
 - Restricted social ingestion needs official API adapters or manual approved entries before it can include X/LinkedIn signals. Tracking: https://github.com/PATELOM925/PredTibo/issues/3
 
 ## Next Required Secrets
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `CRON_SECRET`
-- `RATE_LIMIT_SALT`
+- Production: configured in Vercel.
+- Preview/development: not configured because Vercel CLI requires a preview branch target in this linked setup.
+- Optional: `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Strategy Confidence
 

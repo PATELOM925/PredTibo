@@ -1,6 +1,11 @@
+import type { CSSProperties } from "react";
+import Link from "next/link";
 import { Activity, CalendarClock, Database, RadioTower, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { CommunityCenter } from "@/components/CommunityCenter";
 import { Countdown } from "@/components/Countdown";
 import { GuessPanel } from "@/components/GuessPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { getApprovedCommunityMessages } from "@/lib/db/community";
 import { getLatestPublicState } from "@/lib/db/public-state";
 import { getSupabaseConfigState } from "@/lib/db/server";
 import { sourceLinks, watchEvents } from "@/lib/prediction";
@@ -10,10 +15,18 @@ export const revalidate = 300;
 export default async function Home() {
   const publicState = await getLatestPublicState();
   const serverSubmissionsEnabled = getSupabaseConfigState().configured;
+  const communityMessages = await getApprovedCommunityMessages();
 
   return (
     <main>
       <section className="hero-band">
+        <div className="page-shell topbar">
+          <Link className="brand-lockup" href="/" aria-label="PredTibo home">
+            <span className="brand-mark">PT</span>
+            <span>PredTibo</span>
+          </Link>
+          <ThemeToggle />
+        </div>
         <div className="page-shell hero-grid">
           <div className="hero-copy">
             <p className="eyebrow">
@@ -38,6 +51,10 @@ export default async function Home() {
             <p className="panel-kicker">Next visible Codex adoption moment</p>
             <strong>{publicState.targetDisplay}</strong>
             <span>{publicState.targetUtcDisplay}</span>
+            <div className="model-chip">
+              <span>{publicState.modelVersion}</span>
+              <span>{serverSubmissionsEnabled ? "Live DB" : "Local fallback"}</span>
+            </div>
             <Countdown targetIso={publicState.targetIso} />
             <noscript>
               <p className="noscript-note">Countdown needs JavaScript, but the prediction is still visible above.</p>
@@ -80,9 +97,15 @@ export default async function Home() {
 
       <section className="page-shell meter-section" aria-label="Tibo Reset Meter">
         <article className="meter-panel">
-          <div>
+          <div className="meter-header">
             <p className="panel-kicker">Tibo Reset Meter</p>
-            <h2>{publicState.resetSignalProbability}%</h2>
+            <div
+              aria-label={`${publicState.resetSignalProbability}% ${publicState.resetMeterLabel}`}
+              className="meter-dial"
+              style={{ "--score": `${publicState.resetSignalProbability}%` } as CSSProperties}
+            >
+              <span>{publicState.resetSignalProbability}%</span>
+            </div>
             <p>{publicState.resetMeterLabel}</p>
           </div>
           <div className="meter-track" aria-hidden="true">
@@ -146,6 +169,13 @@ export default async function Home() {
             ))}
           </ul>
         </article>
+      </section>
+
+      <section className="page-shell">
+        <CommunityCenter
+          initialMessages={communityMessages}
+          serverSubmissionsEnabled={serverSubmissionsEnabled}
+        />
       </section>
     </main>
   );

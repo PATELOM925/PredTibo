@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDatabaseNotConfiguredPayload, getSupabaseAdmin } from "@/lib/db/server";
+import { getDatabaseNotConfiguredPayload, getSupabaseConfigState, getSupabaseServer } from "@/lib/db/server";
 import { noStoreJson } from "@/lib/http/no-store";
 import { getClientFingerprint } from "@/lib/security/request";
 
@@ -43,8 +43,9 @@ function currentWindowStart() {
 }
 
 export async function POST(request: NextRequest) {
-  const admin = getSupabaseAdmin();
-  if (!admin) {
+  const config = getSupabaseConfigState();
+  const db = getSupabaseServer();
+  if (!config.configured || !db) {
     return noStoreJson(getDatabaseNotConfiguredPayload(), { status: 503 });
   }
 
@@ -70,7 +71,31 @@ export async function POST(request: NextRequest) {
 
   const windowStart = currentWindowStart();
 
-  const { data: allowed, error: rateLimitError } = await admin.rpc("consume_prediction_submission", {
+  if (config.mode === "server_rpc") {
+    const { data, error } = await db.rpc("submit_user_prediction_from_server", {
+      p_server_secret: config.serverActionSecret,
+      p_predicted_at: parsed.data.predictedAt,
+      p_display_name: parsed.data.displayName,
+      p_note_private: parsed.data.note,
+      p_rate_limit_hash: rateLimitHash,
+      p_user_agent_hash: userAgentHash,
+      p_window_start: windowStart,
+      p_max_submissions: MAX_SUBMISSIONS_PER_HOUR,
+    });
+
+    if (error) {
+      return noStoreJson({ error: "prediction_insert_failed" }, { status: 500 });
+    }
+
+    const result = data as { ok?: boolean; error?: string; predictionId?: string; createdAt?: string } | null;
+    if (!result?.ok) {
+      return noStoreJson({ error: result?.error ?? "prediction_insert_failed" }, { status: result?.error === "rate_limited" ? 429 : 500 });
+    }
+
+    return noStoreJson({ ok: true, predictionId: result.predictionId, createdAt: result.createdAt }, { status: 201 });
+  }
+
+  const { data: allowed, error: rateLimitError } = await db.rpc("consume_prediction_submission", {
     p_rate_limit_hash: rateLimitHash,
     p_window_start: windowStart,
     p_max_submissions: MAX_SUBMISSIONS_PER_HOUR,
@@ -84,7 +109,7 @@ export async function POST(request: NextRequest) {
     return noStoreJson({ error: "rate_limited" }, { status: 429 });
   }
 
-  const { data, error } = await admin
+  const { data, error } = await db
     .from("user_predictions")
     .insert({
       predicted_at: parsed.data.predictedAt,

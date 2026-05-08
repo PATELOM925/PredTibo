@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import type { SourceRow } from "@/lib/db/types";
 import type { IngestedItem } from "./types";
 
+type ExtractableSource = Pick<SourceRow, "platform" | "name" | "handle" | "url" | "trust_weight"> & {
+  id?: string;
+};
+
 type KeywordRule = {
   pattern: RegExp;
   signalType: IngestedItem["signals"][number]["signal_type"];
@@ -42,7 +46,7 @@ export function hashContent(content: string) {
   return createHash("sha256").update(content).digest("hex");
 }
 
-export function extractSignalsFromText(source: SourceRow, htmlOrText: string): IngestedItem {
+export function extractSignalsFromText(source: ExtractableSource, htmlOrText: string): IngestedItem {
   const text = stripHtml(htmlOrText);
   const excerpt = firstMeaningfulExcerpt(text);
   const signals = keywordRules
@@ -56,7 +60,7 @@ export function extractSignalsFromText(source: SourceRow, htmlOrText: string): I
     }));
 
   return {
-    source_id: source.id,
+    source_id: source.id ?? null,
     external_id: source.url,
     url: source.url,
     author_name: source.name,

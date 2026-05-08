@@ -12,6 +12,7 @@ This project is not affiliated with OpenAI, Sam Altman, Tibor Blaho, or any Open
 - Lists watch events that could change the estimate.
 - Shows a Tibo Reset Meter for public reset or limit-change signal probability.
 - Accepts anonymous user predictions through a server route when Supabase is configured.
+- Provides a Supabase-backed community board for short moderated reset-signal takes.
 - Falls back to local-only guesses when the database is not configured.
 
 ## Architecture
@@ -22,6 +23,7 @@ PredTibo is designed as a read-heavy app with database-backed evidence:
 - Supabase schema for sources, source items, extracted signals, model runs, and anonymous user predictions.
 - Vercel/CDN-first caching for public reads.
 - Server routes for prediction submission, latest public state, and secured cron jobs.
+- Server-gated Postgres RPCs for anonymous writes when only a publishable Supabase key is available.
 - Rules-first scoring engine with explicit evidence and uncertainty.
 - Client-side progressive enhancement for countdown and local fallback.
 
@@ -56,14 +58,15 @@ Deploy to Vercel as a standard Next.js project. Configure these environment vari
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SERVER_ACTION_SECRET`
 - `CRON_SECRET`
 - `RATE_LIMIT_SALT`
+- Optional: `SUPABASE_SERVICE_ROLE_KEY`
 - Optional: `X_BEARER_TOKEN`
 - Optional: `LINKEDIN_ACCESS_TOKEN`
 - Optional: `OPENAI_API_KEY`
 
-Apply the SQL migration in `supabase/migrations/` to the connected Supabase project before enabling write routes.
+Apply the SQL migrations in `supabase/migrations/` to the connected Supabase project before enabling write routes. If you use `SERVER_ACTION_SECRET`, store its SHA-256 hash in `public.app_private_config` under `config_key = 'server_action_secret'`.
 
 The default `vercel.json` cron schedule is daily so it works on Vercel Hobby. More frequent scoring requires Vercel Pro or an external scheduler.
 

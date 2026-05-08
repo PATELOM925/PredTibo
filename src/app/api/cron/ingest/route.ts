@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDatabaseNotConfiguredPayload, getSupabaseAdmin } from "@/lib/db/server";
+import { getDatabaseNotConfiguredPayload, getSupabaseConfigState, getSupabaseServer } from "@/lib/db/server";
 import { noStoreJson } from "@/lib/http/no-store";
 import { isAuthorizedCronRequest } from "@/lib/security/request";
 import { ingestConfiguredSources } from "@/lib/source-ingestion/ingest";
@@ -12,11 +12,12 @@ export async function GET(request: NextRequest) {
     return noStoreJson({ error: "unauthorized" }, { status: 401 });
   }
 
-  const admin = getSupabaseAdmin();
-  if (!admin) {
+  const config = getSupabaseConfigState();
+  const db = getSupabaseServer();
+  if (!config.configured || !db) {
     return noStoreJson(getDatabaseNotConfiguredPayload(), { status: 503 });
   }
 
-  const summary = await ingestConfiguredSources(admin);
+  const summary = await ingestConfiguredSources(db, config);
   return noStoreJson({ ok: true, summary });
 }
