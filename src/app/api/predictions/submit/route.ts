@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabaseNotConfiguredPayload, getSupabaseAdmin } from "@/lib/db/server";
-import type { PredictionSubmissionWindowRow } from "@/lib/db/types";
 import { getClientFingerprint } from "@/lib/security/request";
 
 export const runtime = "nodejs";
@@ -48,7 +47,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(getDatabaseNotConfiguredPayload(), { status: 503 });
   }
 
-  const parsed = parsePayload((await request.json()) as PredictionPayload);
+  let payload: PredictionPayload;
+  try {
+    payload = (await request.json()) as PredictionPayload;
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const parsed = parsePayload(payload);
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
@@ -56,31 +62,18 @@ export async function POST(request: NextRequest) {
   const { rateLimitHash, userAgentHash } = getClientFingerprint(request);
   const windowStart = currentWindowStart();
 
-  const { data: existingWindowData, error: readWindowError } = await admin
-    .from("prediction_submission_windows")
-    .select("*")
-    .eq("rate_limit_hash", rateLimitHash)
-    .maybeSingle();
-
-  if (readWindowError) {
-    return NextResponse.json({ error: "rate_limit_read_failed" }, { status: 500 });
-  }
-
-  const existingWindow = existingWindowData as unknown as PredictionSubmissionWindowRow | null;
-  const existingCount = existingWindow?.window_start === windowStart ? existingWindow.submission_count : 0;
-  if (existingCount >= MAX_SUBMISSIONS_PER_HOUR) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-  }
-
-  const { error: writeWindowError } = await admin.from("prediction_submission_windows").upsert({
-    rate_limit_hash: rateLimitHash,
-    window_start: windowStart,
-    submission_count: existingCount + 1,
-    updated_at: new Date().toISOString(),
+  const { data: allowed, error: rateLimitError } = await admin.rpc("consume_prediction_submission", {
+    p_rate_limit_hash: rateLimitHash,
+    p_window_start: windowStart,
+    p_max_submissions: MAX_SUBMISSIONS_PER_HOUR,
   });
 
-  if (writeWindowError) {
-    return NextResponse.json({ error: "rate_limit_write_failed" }, { status: 500 });
+  if (rateLimitError) {
+    return NextResponse.json({ error: "rate_limit_failed" }, { status: 500 });
+  }
+
+  if (!allowed) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
   const { data, error } = await admin

@@ -114,6 +114,11 @@ export async function ingestConfiguredSources(admin: SupabaseClient): Promise<In
     summary.itemsStored += 1;
 
     if (storedItem && item.signals.length > 0) {
+      const { error: deleteSignalError } = await admin.from("signals").delete().eq("source_item_id", storedItem.id);
+      if (deleteSignalError) {
+        throw new Error(`Failed to replace signals for ${item.url}: ${deleteSignalError.message}`);
+      }
+
       const { error: signalError } = await admin.from("signals").insert(
         item.signals.map((signal) => ({
           source_item_id: storedItem.id,

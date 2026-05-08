@@ -13,3 +13,14 @@ All notable changes to PredTibo will be documented in this file.
 - Rules-first prediction engine and compliant source-ingestion layer.
 - Cacheable latest prediction API, secured cron routes, and anonymous prediction submission route.
 - Tibo Reset Meter UI with evidence trail and local fallback.
+- Public GitHub and Vercel deployment status documentation.
+
+### Changed
+
+- Use daily Vercel cron schedules so the project deploys on Hobby accounts.
+- Replace read-then-write submission throttling with an atomic database function.
+
+### Fixed
+
+- Prevent repeated ingestion runs from duplicating signals for the same source item.
+- Add copy-safety tests to block guaranteed-reset claims.

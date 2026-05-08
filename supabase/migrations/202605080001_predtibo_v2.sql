@@ -92,11 +92,49 @@ create table if not exists public.prediction_submission_windows (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.consume_prediction_submission(
+  p_rate_limit_hash text,
+  p_window_start timestamptz,
+  p_max_submissions integer
+)
+returns boolean
+language plpgsql
+as $$
+declare
+  next_count integer;
+begin
+  insert into public.prediction_submission_windows (
+    rate_limit_hash,
+    window_start,
+    submission_count,
+    updated_at
+  )
+  values (p_rate_limit_hash, p_window_start, 1, now())
+  on conflict (rate_limit_hash)
+  do update set
+    window_start = case
+      when public.prediction_submission_windows.window_start < p_window_start
+        then p_window_start
+      else public.prediction_submission_windows.window_start
+    end,
+    submission_count = case
+      when public.prediction_submission_windows.window_start < p_window_start
+        then 1
+      else public.prediction_submission_windows.submission_count + 1
+    end,
+    updated_at = now()
+  returning submission_count into next_count;
+
+  return next_count <= p_max_submissions;
+end;
+$$;
+
 create index if not exists source_items_source_id_idx on public.source_items(source_id);
 create index if not exists source_items_content_hash_idx on public.source_items(content_hash);
 create index if not exists signals_source_item_id_idx on public.signals(source_item_id);
 create index if not exists model_runs_public_created_idx on public.model_runs(is_public, created_at desc);
 create index if not exists user_predictions_created_idx on public.user_predictions(created_at desc);
+create index if not exists user_predictions_rate_hash_created_idx on public.user_predictions(rate_limit_hash, created_at desc);
 
 alter table public.sources enable row level security;
 alter table public.source_items enable row level security;
@@ -118,6 +156,8 @@ grant select, insert, update, delete on table public.signals to service_role;
 grant select, insert, update, delete on table public.model_runs to service_role;
 grant select, insert, update, delete on table public.user_predictions to service_role;
 grant select, insert, update, delete on table public.prediction_submission_windows to service_role;
+revoke all on function public.consume_prediction_submission(text, timestamptz, integer) from public, anon, authenticated;
+grant execute on function public.consume_prediction_submission(text, timestamptz, integer) to service_role;
 
 drop policy if exists "No direct anonymous source access" on public.sources;
 create policy "No direct anonymous source access"

@@ -47,6 +47,11 @@ npm audit --json
 
 ## Deployment
 
+Current deployment:
+
+- Public GitHub repo: https://github.com/PATELOM925/PredTibo
+- Vercel production URL: https://predtibo.vercel.app
+
 Deploy to Vercel as a standard Next.js project. Configure these environment variables in Vercel, not in git:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
@@ -60,12 +65,15 @@ Deploy to Vercel as a standard Next.js project. Configure these environment vari
 
 Apply the SQL migration in `supabase/migrations/` to the connected Supabase project before enabling write routes.
 
+The default `vercel.json` cron schedule is daily so it works on Vercel Hobby. More frequent scoring requires Vercel Pro or an external scheduler.
+
 ## Docs
 
 - [PRD](docs/project/PRD.md)
 - [Rules](docs/project/RULES.md)
 - [Q and Brain](docs/project/Q_AND_BRAIN.md)
 - [ADRs](docs/project/ADR.md)
+- [Setup Status](docs/ops/SETUP_STATUS.md)
 
 ## Sources
 
