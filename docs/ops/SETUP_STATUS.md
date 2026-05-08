@@ -14,8 +14,9 @@ Last updated: 2026-05-08
 
 ## Blocked
 
-- Vercel Git integration did not connect from CLI. The local deployment works, but push-to-deploy needs the Vercel GitHub app to have access to `PATELOM925/PredTibo`.
-- Supabase live project setup is not applied yet. The migration is ready, but the available CLI paths are blocked by missing Supabase auth/tooling and local Docker/Xcode toolchain issues.
+- Vercel Git integration did not connect from CLI. The local deployment works, but push-to-deploy needs the Vercel GitHub app to have access to `PATELOM925/PredTibo`. Tracking: https://github.com/PATELOM925/PredTibo/issues/1
+- Supabase live project setup is not applied yet. The migration is ready, but the available CLI paths are blocked by missing Supabase auth/tooling and local Docker/Xcode toolchain issues. Tracking: https://github.com/PATELOM925/PredTibo/issues/2
+- Restricted social ingestion needs official API adapters or manual approved entries before it can include X/LinkedIn signals. Tracking: https://github.com/PATELOM925/PredTibo/issues/3
 
 ## Next Required Secrets
 
