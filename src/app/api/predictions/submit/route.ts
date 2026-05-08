@@ -59,7 +59,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const { rateLimitHash, userAgentHash } = getClientFingerprint(request);
+  let rateLimitHash: string;
+  let userAgentHash: string;
+  try {
+    ({ rateLimitHash, userAgentHash } = getClientFingerprint(request));
+  } catch {
+    return NextResponse.json({ error: "rate_limit_salt_missing" }, { status: 500 });
+  }
+
   const windowStart = currentWindowStart();
 
   const { data: allowed, error: rateLimitError } = await admin.rpc("consume_prediction_submission", {
