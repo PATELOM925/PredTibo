@@ -69,20 +69,20 @@ export function CommunityCenter({ initialMessages, serverSubmissionsEnabled }: C
   }
 
   return (
-    <section className="community-panel" aria-label="Community Center">
+    <section className={`community-panel ${messages.length === 0 ? "community-panel-empty" : ""}`} aria-label="Community Center">
       <div className="community-copy">
         <p className="panel-kicker">
           <MessageCircle aria-hidden="true" size={17} />
-          Community Center
+          Community calls
         </p>
-        <h2>Drop a Codex reset read.</h2>
+        <h2>Leave a short reset-weather read.</h2>
         <p>
-          Share a short public-signal take while the main prediction keeps its evidence trail. Messages are rate-limited
-          and reviewed before they show publicly.
+          Share a short public-signal take. This is deliberately async and moderated so the launch can handle spikes
+          without turning into an unreviewed chat room.
         </p>
         <div className="community-guardrail">
           <ShieldCheck aria-hidden="true" size={17} />
-          No login, no public raw notes, no unsupported scraping.
+          No login, no unsupported scraping, no instant public posts.
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export function CommunityCenter({ initialMessages, serverSubmissionsEnabled }: C
         <textarea
           id="community-message"
           maxLength={280}
-          placeholder="Today feels like a medium reset-signal day because..."
+          placeholder="Quiet, watch, or hot signal day because..."
           rows={4}
           value={body}
           onChange={(event) => setBody(event.target.value)}
@@ -115,14 +115,14 @@ export function CommunityCenter({ initialMessages, serverSubmissionsEnabled }: C
         {statusText ? <p className={`form-status ${submitState === "error" ? "error" : ""}`}>{statusText}</p> : null}
       </form>
 
-      <div className="message-board">
-        <div className="board-header">
-          <h3>Approved board</h3>
-          <button className="icon-button" type="button" onClick={refreshMessages} aria-label="Refresh community messages">
-            <RefreshCw aria-hidden="true" size={17} className={isRefreshing ? "spinning" : undefined} />
-          </button>
-        </div>
-        {messages.length > 0 ? (
+      {messages.length > 0 ? (
+        <div className="message-board">
+          <div className="board-header">
+            <h3>Latest approved calls</h3>
+            <button className="icon-button" type="button" onClick={refreshMessages} aria-label="Refresh community messages">
+              <RefreshCw aria-hidden="true" size={17} className={isRefreshing ? "spinning" : undefined} />
+            </button>
+          </div>
           <ul>
             {messages.map((message) => (
               <li key={message.id}>
@@ -134,10 +134,8 @@ export function CommunityCenter({ initialMessages, serverSubmissionsEnabled }: C
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="muted">No approved community posts yet.</p>
-        )}
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }

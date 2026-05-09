@@ -1,6 +1,6 @@
 import type { Evidence, ScoringInputSignal, ScoringResult } from "./types";
 
-export const SCORING_MODEL_VERSION = "rules-v2.0.0";
+export const SCORING_MODEL_VERSION = "rules-v2.1.0";
 
 const RESET_POSITIVE_TYPES = new Set<ScoringInputSignal["signalType"]>([
   "limit_change",
@@ -85,6 +85,7 @@ function toEvidence(signal: ScoringInputSignal): Evidence {
     signalType: signal.signalType,
     confidence: signal.confidence,
     weight: signal.weight,
+    observedAt: signal.observedAt,
   };
 }
 
@@ -120,5 +121,11 @@ export function scoreSignals(signals: ScoringInputSignal[], now = new Date()): S
     uncertainty:
       "This is not an actual reset detector. It estimates public reset or limit-change signal probability from approved public evidence.",
     evidence: topEvidence,
+    scoreBreakdown: {
+      resetStrength: Number(resetStrength.toFixed(4)),
+      adoptionStrength: Number(adoptionStrength.toFixed(4)),
+      overallStrength: Number(overallStrength.toFixed(4)),
+      evidenceCount: topEvidence.length,
+    },
   };
 }

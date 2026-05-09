@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { Activity, CalendarClock, Database, RadioTower, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { CalendarClock, ExternalLink, RadioTower, Share2, ShieldCheck, Sparkles, Target } from "lucide-react";
 import { CommunityCenter } from "@/components/CommunityCenter";
 import { Countdown } from "@/components/Countdown";
 import { GuessPanel } from "@/components/GuessPanel";
@@ -16,6 +16,9 @@ export default async function Home() {
   const publicState = await getLatestPublicState();
   const serverSubmissionsEnabled = getSupabaseConfigState().configured;
   const communityMessages = await getApprovedCommunityMessages();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://predtibo.vercel.app";
+  const shareHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(publicState.shareText)}&url=${encodeURIComponent(siteUrl)}`;
+  const topEvidence = publicState.evidence.slice(0, 3);
 
   return (
     <main>
@@ -25,77 +28,101 @@ export default async function Home() {
             <span className="brand-mark">PT</span>
             <span>PredTibo</span>
           </Link>
+          <nav className="topnav" aria-label="Primary navigation">
+            <a href="#evidence">Receipts</a>
+            <a href="#make-your-call">Predict</a>
+            <a href="#community">Community</a>
+          </nav>
           <ThemeToggle />
         </div>
         <div className="page-shell hero-grid">
           <div className="hero-copy">
             <p className="eyebrow">
               <Sparkles aria-hidden="true" size={16} />
-              Fan prediction, not official OpenAI data
+              Daily public-signal forecast
             </p>
-            <h1>PredTibo</h1>
-            <p className="lead">{publicState.headline}</p>
-            <div className="hero-actions" aria-label="Prediction summary">
-              <span>
-                <CalendarClock aria-hidden="true" size={18} />
-                {publicState.targetDisplay}
-              </span>
-              <span>
-                <Activity aria-hidden="true" size={18} />
-                {publicState.confidence} confidence
-              </span>
+            <h1>{publicState.pulseQuestion}</h1>
+            <p className="lead">
+              {publicState.pulseSummary} Fan project, not official OpenAI data.
+            </p>
+            <div className="hero-actions" aria-label="Launch actions">
+              <a className="action-button primary-action" href="#make-your-call">
+                <Target aria-hidden="true" size={18} />
+                Make your call
+              </a>
+              <a className="action-button secondary-action" href={shareHref} rel="noreferrer" target="_blank">
+                <Share2 aria-hidden="true" size={18} />
+                Share today&apos;s card
+              </a>
             </div>
           </div>
 
-          <aside className="prediction-panel" aria-label="Current prediction">
-            <p className="panel-kicker">Next visible Codex adoption moment</p>
-            <strong>{publicState.targetDisplay}</strong>
-            <span>{publicState.targetUtcDisplay}</span>
-            <div className="model-chip">
-              <span>{publicState.modelVersion}</span>
-              <span>{serverSubmissionsEnabled ? "Live DB" : "Local fallback"}</span>
+          <aside className="weather-panel" aria-label="Today's Codex reset weather">
+            <div className="weather-topline">
+              <p className="panel-kicker">Reset weather</p>
+              <span>{publicState.updatedDisplay}</span>
             </div>
-            <Countdown targetIso={publicState.targetIso} />
-            <noscript>
-              <p className="noscript-note">Countdown needs JavaScript, but the prediction is still visible above.</p>
-            </noscript>
+            <div
+              aria-label={`${publicState.resetSignalProbability}% ${publicState.resetMeterLabel}`}
+              className="weather-dial"
+              style={{ "--score": `${publicState.resetSignalProbability}%` } as CSSProperties}
+            >
+              <span>{publicState.resetSignalProbability}%</span>
+            </div>
+            <strong>{publicState.pulseAnswer}</strong>
+            <p>{publicState.resetMeterLabel}</p>
+            <div className="receipt-strip" aria-label="Top receipts">
+              {topEvidence.map((item) => (
+                <a href={item.url} key={item.id} rel="noreferrer" target="_blank">
+                  <ExternalLink aria-hidden="true" size={14} />
+                  {item.sourceLabel}
+                </a>
+              ))}
+            </div>
           </aside>
         </div>
       </section>
 
-      <section className="page-shell section-grid" aria-label="Prediction basis">
-        <article className="info-block">
+      <section className="page-shell launch-summary" aria-label="Prediction summary">
+        <article className="summary-card">
+          <span>Next Codex milestone read</span>
+          <strong>{publicState.targetDisplay}</strong>
+          <p>{publicState.targetUtcDisplay}</p>
+        </article>
+        <article className="summary-card">
+          <span>Confidence band</span>
+          <strong>{publicState.confidence}</strong>
+          <p>{publicState.confidenceWindow}</p>
+        </article>
+        <article className="summary-card">
+          <span>Next refresh</span>
+          <strong>Daily check</strong>
+          <p>{publicState.nextUpdateDisplay}</p>
+        </article>
+      </section>
+
+      <section className="page-shell focus-grid" aria-label="Countdown and rules">
+        <article className="countdown-panel">
+          <div className="section-title">
+            <CalendarClock aria-hidden="true" size={22} />
+            <h2>Countdown to the current call</h2>
+          </div>
+            <Countdown targetIso={publicState.targetIso} />
+            <noscript>
+              <p className="noscript-note">Countdown needs JavaScript, but the prediction is still visible above.</p>
+            </noscript>
+        </article>
+        <article className="method-panel">
           <div className="section-title">
             <ShieldCheck aria-hidden="true" size={22} />
-            <h2>Rules of the guess</h2>
+            <h2>How PredTibo stays honest</h2>
           </div>
           <p>{publicState.rationale}</p>
           <p className="muted">{publicState.uncertainty}</p>
         </article>
-
-        <article className="info-block">
-          <div className="section-title">
-            <Zap aria-hidden="true" size={22} />
-            <h2>Scale posture</h2>
-          </div>
-          <p>
-            Public reads stay cacheable while user guesses and source ingestion run through focused server routes.
-            Database-backed features stay out of the page-rendering hot path.
-          </p>
-          <div className="scale-list">
-            <span>
-              <RadioTower aria-hidden="true" size={17} />
-              CDN-first reads
-            </span>
-            <span>
-              <Database aria-hidden="true" size={17} />
-              Supabase-backed writes
-            </span>
-          </div>
-        </article>
       </section>
 
-      <section className="page-shell meter-section" aria-label="Tibo Reset Meter">
+      <section className="page-shell meter-section" aria-label="Tibo Reset Meter" id="evidence">
         <article className="meter-panel">
           <div className="meter-header">
             <p className="panel-kicker">Tibo Reset Meter</p>
@@ -118,14 +145,18 @@ export default async function Home() {
         </article>
 
         <article className="evidence-panel">
-          <h2>Top evidence</h2>
+          <h2>Receipts behind today&apos;s read</h2>
           <ul>
             {publicState.evidence.map((item) => (
               <li key={item.id}>
-                <a href={item.url} rel="noreferrer" target={item.url === "#" ? undefined : "_blank"}>
+                <a href={item.url} rel="noreferrer" target="_blank">
                   {item.title}
+                  <ExternalLink aria-hidden="true" size={15} />
                 </a>
-                <span>{item.signalType.replaceAll("_", " ")} signal</span>
+                <span>
+                  {item.sourceLabel} · {item.signalType.replaceAll("_", " ")} · observed{" "}
+                  {new Date(item.observedAt).toLocaleDateString("en", { month: "short", day: "numeric" })}
+                </span>
               </li>
             ))}
           </ul>
@@ -135,7 +166,7 @@ export default async function Home() {
       <section className="page-shell">
         <div className="section-title wide-title">
           <RadioTower aria-hidden="true" size={22} />
-          <h2>Signals to watch</h2>
+          <h2>What could move the weather</h2>
         </div>
         <div className="watch-grid">
           {watchEvents.map((event) => (
@@ -155,10 +186,8 @@ export default async function Home() {
         <GuessPanel targetIso={publicState.targetIso} serverSubmissionsEnabled={serverSubmissionsEnabled} />
 
         <article className="sources-block">
-          <h2>Source trail</h2>
-          <p>
-            Generated by {publicState.modelVersion}. The estimate should move when primary sources move.
-          </p>
+          <h2>Source policy</h2>
+          <p>{publicState.sourcePolicy}</p>
           <ul>
             {sourceLinks.map((source) => (
               <li key={source.url}>
@@ -171,7 +200,7 @@ export default async function Home() {
         </article>
       </section>
 
-      <section className="page-shell">
+      <section className="page-shell" id="community">
         <CommunityCenter
           initialMessages={communityMessages}
           serverSubmissionsEnabled={serverSubmissionsEnabled}

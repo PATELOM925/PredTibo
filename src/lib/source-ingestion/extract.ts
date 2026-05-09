@@ -11,17 +11,24 @@ type KeywordRule = {
   signalType: IngestedItem["signals"][number]["signal_type"];
   weight: number;
   confidence: number;
+  needsCodexContext?: boolean;
 };
 
 const keywordRules: KeywordRule[] = [
-  { pattern: /\bcodex\b.*\b(used|users|developers|adoption)\b/i, signalType: "codex_usage", weight: 1.4, confidence: 0.82 },
-  { pattern: /\bcodex\b.*\b(launch|release|ship|available)\b/i, signalType: "codex_launch", weight: 1.0, confidence: 0.75 },
-  { pattern: /\b(limit|limits|quota|usage)\b.*\b(codex|chatgpt)\b/i, signalType: "limit_change", weight: 0.9, confidence: 0.72 },
-  { pattern: /\b(free|temporary access|free access)\b.*\bcodex\b/i, signalType: "free_access", weight: 0.85, confidence: 0.68 },
-  { pattern: /\b(reset|resetting|refill|refilled)\b.*\b(limit|quota|usage)\b/i, signalType: "reset_language", weight: 0.8, confidence: 0.55 },
-  { pattern: /\bconfirmed|official|announced\b/i, signalType: "official_confirmation", weight: 1.1, confidence: 0.74 },
-  { pattern: /\brumor|maybe|guess|speculat/i, signalType: "rumor", weight: 0.35, confidence: 0.35 },
-  { pattern: /\bnot available|no reset|no change|unchanged\b/i, signalType: "contradiction", weight: 1.1, confidence: 0.74 },
+  { pattern: /\bcodex\b[\s\S]{0,160}\b(used|users|developers|adoption)\b/i, signalType: "codex_usage", weight: 1.4, confidence: 0.82 },
+  { pattern: /\bcodex\b[\s\S]{0,160}\b(launch|release|ship|available)\b/i, signalType: "codex_launch", weight: 1.0, confidence: 0.75 },
+  { pattern: /\b(limit|limits|quota|usage)\b[\s\S]{0,160}\b(codex|chatgpt)\b/i, signalType: "limit_change", weight: 0.9, confidence: 0.72 },
+  { pattern: /\b(free|temporary access|free access)\b[\s\S]{0,160}\bcodex\b/i, signalType: "free_access", weight: 0.85, confidence: 0.68 },
+  {
+    pattern: /\b(reset|resetting|refill|refilled)\b[\s\S]{0,160}\b(codex|chatgpt|limit|limits|quota|usage)\b/i,
+    signalType: "reset_language",
+    weight: 0.8,
+    confidence: 0.55,
+    needsCodexContext: true,
+  },
+  { pattern: /\bconfirmed|official|announced\b/i, signalType: "official_confirmation", weight: 1.1, confidence: 0.74, needsCodexContext: true },
+  { pattern: /\brumor|maybe|guess|speculat/i, signalType: "rumor", weight: 0.35, confidence: 0.35, needsCodexContext: true },
+  { pattern: /\bnot available|no reset|no change|unchanged\b/i, signalType: "contradiction", weight: 1.1, confidence: 0.74, needsCodexContext: true },
 ];
 
 function stripHtml(html: string) {
@@ -42,6 +49,24 @@ function firstMeaningfulExcerpt(text: string) {
   return text.slice(0, 500).trim();
 }
 
+function hasCodexContext(text: string, matchIndex: number) {
+  const context = text.slice(Math.max(0, matchIndex - 240), matchIndex + 360);
+  return /\b(codex|chatgpt|openai)\b/i.test(context);
+}
+
+function matchesRule(text: string, rule: KeywordRule) {
+  const match = rule.pattern.exec(text);
+  if (!match || match.index < 0) {
+    return false;
+  }
+
+  if (rule.needsCodexContext && !hasCodexContext(text, match.index)) {
+    return false;
+  }
+
+  return true;
+}
+
 export function hashContent(content: string) {
   return createHash("sha256").update(content).digest("hex");
 }
@@ -50,7 +75,7 @@ export function extractSignalsFromText(source: ExtractableSource, htmlOrText: st
   const text = stripHtml(htmlOrText);
   const excerpt = firstMeaningfulExcerpt(text);
   const signals = keywordRules
-    .filter((rule) => rule.pattern.test(text))
+    .filter((rule) => matchesRule(text, rule))
     .map((rule) => ({
       signal_type: rule.signalType,
       confidence: Math.min(1, rule.confidence * source.trust_weight),

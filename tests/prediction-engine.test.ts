@@ -42,10 +42,11 @@ test("official fresh reset signal raises reset probability with evidence", () =>
     now,
   );
 
-  assert.equal(scored.modelVersion, "rules-v2.0.0");
+  assert.equal(scored.modelVersion, "rules-v2.1.0");
   assert.ok(scored.resetSignalProbability >= 65);
   assert.ok(scored.evidence.some((item) => item.id === "official-reset"));
   assert.match(scored.uncertainty, /not an actual reset detector/i);
+  assert.equal(scored.scoreBreakdown.evidenceCount, scored.evidence.length);
 });
 
 test("weak rumor does not create fake certainty", () => {

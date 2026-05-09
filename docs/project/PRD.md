@@ -2,16 +2,17 @@
 
 ## Product Goal
 
-PredTibo gives Codex fans a lightweight, transparent way to follow and guess the next major Codex adoption moment without pretending to have official OpenAI data.
+PredTibo gives Codex fans a lightweight, transparent daily "Reset Weather" read: a public-signal forecast for Codex reset and limit-change speculation, without pretending to have official OpenAI data.
 
 ## Audience
 
 - Codex users who enjoy community speculation.
 - Builders watching OpenAI product adoption.
-- People who want a fast shareable countdown page rather than a dashboard.
+- People who want a fast shareable daily signal page rather than a dashboard.
 
 ## V2 Scope
 
+- One public reset-weather score for today.
 - One public system prediction for a Codex milestone date and time.
 - Tibo Reset Meter for public reset or limit-change signal probability.
 - Confidence band and source-backed reasoning.
@@ -19,6 +20,7 @@ PredTibo gives Codex fans a lightweight, transparent way to follow and guess the
 - Countdown to the prediction.
 - Watchlist of public events that could move the prediction.
 - Anonymous user prediction submission through server routes when Supabase is configured.
+- Shareable Open Graph/Twitter image for the current reset-weather score.
 - Local-only fallback when Supabase is not configured.
 - Clear fan-project disclaimer.
 
@@ -37,16 +39,17 @@ OpenAI publicly described Codex as used weekly by more than 3 million developers
 
 ## UX Outline
 
-1. Hero section with product name, prediction date/time, and fan disclaimer.
-2. Countdown section that works as progressive enhancement.
-3. Prediction model section with confidence band and reasoning.
-4. Watchlist section for events that may update the prediction.
-5. Tibo Reset Meter section with current probability and evidence.
-6. User prediction panel with date/time input, display name, note, save, clear, and share link.
+1. Hero section asks "Will Codex reset today?" and shows the daily reset-weather score.
+2. Receipt strip links to real public evidence, never placeholders.
+3. Countdown section works as progressive enhancement.
+4. Tibo Reset Meter explains the public-signal probability and uncertainty.
+5. Watchlist section shows events that may update the read.
+6. User prediction and community-call panels stay async, moderated, and rate-limited.
 
 ## Success Metrics
 
 - Public page remains cacheable.
+- No production HTML contains placeholder links, smoke-test posts, or internal model/debug labels.
 - Server write path rejects invalid or rate-limited predictions.
 - Cron routes reject missing or invalid `CRON_SECRET`.
 - Supabase migration enables RLS and avoids direct anonymous table access.
