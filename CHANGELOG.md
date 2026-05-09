@@ -20,6 +20,7 @@ All notable changes to PredTibo will be documented in this file.
 - Supabase advisor hardening migrations for fixed function search paths, column-level public grants, and redundant RLS policy cleanup.
 - Reset Weather launch framing, shareable Open Graph image, and Vercel Web Analytics.
 - Evidence snapshots and score-breakdown storage for model runs.
+- Anonymous-only public prediction snapshot projection for the cacheable latest-state API fallback.
 
 ### Changed
 
@@ -35,3 +36,4 @@ All notable changes to PredTibo will be documented in this file.
 - Force no-store responses for write and cron API routes.
 - Replace placeholder evidence links with real source URLs.
 - Remove the production smoke-test community post through launch cleanup.
+- Revoke anonymous and authenticated execution from server-only Supabase RPCs.
