@@ -9,6 +9,7 @@ export type Evidence = {
   signalType: SignalRow["signal_type"];
   confidence: number;
   weight: number;
+  observedAt: string;
 };
 
 export type PublicPredictionState = {
@@ -18,6 +19,12 @@ export type PublicPredictionState = {
   targetDisplay: string;
   targetUtcDisplay: string;
   headline: string;
+  pulseQuestion: string;
+  pulseAnswer: string;
+  pulseSummary: string;
+  updatedDisplay: string;
+  nextUpdateDisplay: string;
+  shareText: string;
   confidence: "Low" | "Medium" | "High";
   confidenceWindow: string;
   resetSignalProbability: number;
@@ -50,4 +57,10 @@ export type ScoringResult = {
   rationale: string;
   uncertainty: string;
   evidence: Evidence[];
+  scoreBreakdown: {
+    resetStrength: number;
+    adoptionStrength: number;
+    overallStrength: number;
+    evidenceCount: number;
+  };
 };

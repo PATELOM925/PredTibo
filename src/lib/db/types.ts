@@ -23,6 +23,11 @@ export type Database = {
         Insert: ModelRunInsert;
         Update: Partial<ModelRunInsert>;
       };
+      prediction_snapshots: {
+        Row: PredictionSnapshotRow;
+        Insert: PredictionSnapshotInsert;
+        Update: Partial<PredictionSnapshotInsert>;
+      };
       user_predictions: {
         Row: UserPredictionRow;
         Insert: UserPredictionInsert;
@@ -122,12 +127,25 @@ export type ModelRunRow = {
   reset_signal_probability: number;
   rationale: string;
   evidence_signal_ids: string[];
+  evidence_snapshot: Json;
+  score_breakdown: Json;
   is_public: boolean;
   created_at: string;
 };
 
 export type ModelRunInsert = Omit<ModelRunRow, "id" | "created_at" | "run_date"> &
   Partial<Pick<ModelRunRow, "id" | "created_at" | "run_date">>;
+
+export type PredictionSnapshotRow = {
+  id: string;
+  model_run_id: string | null;
+  payload: Json;
+  is_public: boolean;
+  created_at: string;
+};
+
+export type PredictionSnapshotInsert = Omit<PredictionSnapshotRow, "id" | "created_at"> &
+  Partial<Pick<PredictionSnapshotRow, "id" | "created_at">>;
 
 export type UserPredictionRow = {
   id: string;

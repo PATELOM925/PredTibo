@@ -6,6 +6,7 @@
 - Prediction copy must say when it is speculative.
 - If a public OpenAI source contradicts a prediction, the prediction must be revised or marked stale.
 - Do not treat social posts, rumors, screenshots, or memes as confirmed facts.
+- The Reset Weather score predicts public signal activity, not actual account reset state.
 
 ## Data-Source Rules
 
@@ -13,6 +14,7 @@
 - Prefer Vercel primary docs for hosting and caching claims.
 - Use dated source notes so readers know when a signal was observed.
 - Do not invent exact subscriber counts, reset schedules, or internal OpenAI policy details.
+- Do not publish evidence links unless they resolve to a real public source URL.
 - Broad crawling means compliant source discovery, not login bypass, platform-control bypass, paywall bypass, or private data collection.
 - X and LinkedIn sources require official API credentials or approved manual entries.
 
@@ -37,3 +39,4 @@
 - User prediction writes require validation and rate limiting.
 - Cron routes must require `CRON_SECRET`.
 - Any high-traffic endpoint must define cache headers and a failure mode before deployment.
+- Launch-grade Supabase access requires server-only service-role credentials; public RPC fallback is not acceptable for production launch.

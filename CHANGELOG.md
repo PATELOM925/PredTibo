@@ -18,16 +18,22 @@ All notable changes to PredTibo will be documented in this file.
 - Supabase-backed community message board and server-gated RPC write path.
 - GitHub Actions CI for lint, tests, build, and dependency audit.
 - Supabase advisor hardening migrations for fixed function search paths, column-level public grants, and redundant RLS policy cleanup.
+- Reset Weather launch framing, shareable Open Graph image, and Vercel Web Analytics.
+- Evidence snapshots and score-breakdown storage for model runs.
+- Anonymous-only public prediction snapshot projection for the cacheable latest-state API fallback.
 
 ### Changed
 
 - Use daily Vercel cron schedules so the project deploys on Hobby accounts.
 - Replace read-then-write submission throttling with an atomic database function.
-- Allow production writes through a publishable Supabase key plus server-only action secret when no service-role key is available.
-- Route public reads through RLS-protected, column-limited Supabase tables instead of exposing private write metadata.
+- Require service-role server access for launch-grade Supabase reads and writes, with legacy RPC fallback gated behind an explicit opt-in flag.
+- Reframe the homepage from an internal prediction dashboard to a daily Codex reset-weather page.
 
 ### Fixed
 
 - Prevent repeated ingestion runs from duplicating signals for the same source item.
 - Add copy-safety tests to block guaranteed-reset claims.
 - Force no-store responses for write and cron API routes.
+- Replace placeholder evidence links with real source URLs.
+- Remove the production smoke-test community post through launch cleanup.
+- Revoke anonymous and authenticated execution from server-only Supabase RPCs.

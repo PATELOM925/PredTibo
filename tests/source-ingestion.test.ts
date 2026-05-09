@@ -31,6 +31,15 @@ test("extracts official codex and limit signals from public text", () => {
   assert.ok(item.signals.some((signal) => signal.signal_type === "limit_change"));
 });
 
+test("does not treat generic reset copy as Codex reset evidence", () => {
+  const item = extractSignalsFromText(
+    { ...baseSource, name: "Generic source", url: "https://example.com/generic", trust_weight: 0.4 },
+    "Reset your password from the account settings page. This article does not mention developer usage limits.",
+  );
+
+  assert.equal(item.signals.some((signal) => signal.signal_type === "reset_language"), false);
+});
+
 test("restricted platforms are separated from public page crawling", () => {
   assert.equal(isRestrictedPlatform("x"), true);
   assert.equal(isRestrictedPlatform("linkedin"), true);

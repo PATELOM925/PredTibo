@@ -201,14 +201,14 @@ export function GuessPanel({ targetIso, serverSubmissionsEnabled }: GuessPanelPr
   }
 
   return (
-    <article className="guess-panel">
+    <article className="guess-panel" id="make-your-call">
       <div>
-        <p className="panel-kicker">Your prediction</p>
-        <h2>Pick your Codex moment</h2>
+        <p className="panel-kicker">Make your call</p>
+        <h2>When does the next signal land?</h2>
         <p>
           {serverSubmissionsEnabled
-            ? "PredTibo stores this anonymously through the server route. Notes stay private until moderation exists."
-            : "The database is not configured yet, so this stays in your browser and share links only."}
+            ? "Submit an anonymous public-signal call. Notes stay private unless a future moderation flow explicitly approves them."
+            : "Save a local call in this browser and turn it into a share link."}
         </p>
       </div>
 
@@ -242,11 +242,11 @@ export function GuessPanel({ targetIso, serverSubmissionsEnabled }: GuessPanelPr
       </label>
 
       <label>
-        Note
+        Why this call?
         <textarea
           value={note}
           maxLength={160}
-          placeholder="Why this date?"
+          placeholder="Public launch, Help Center change, or community chatter..."
           onChange={(event) => {
             setNote(event.target.value);
             setSaved(false);

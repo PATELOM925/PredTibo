@@ -86,3 +86,37 @@ Consequences:
 - X/LinkedIn sources can exist in the allowlist but return `credentials_missing` or `api_adapter_not_configured` until official API access is configured.
 - Manual source entries are acceptable for restricted posts.
 - The ingestion pipeline stores skips as evidence of safe behavior, not silent failures.
+
+## ADR-0006: Launch as Daily Reset Weather
+
+Date: 2026-05-09
+
+Status: Accepted
+
+Decision: PredTibo launches as a daily Codex Reset Weather page rather than a generic prediction dashboard.
+
+Context: The first production UI was technically functional but exposed implementation details and did not create a clear shareable hook. The launch page needs one public question, one score, and attached receipts.
+
+Consequences:
+
+- The hero asks about today's Codex reset signal activity.
+- Model/version/debug labels stay out of public launch copy.
+- Evidence links must point to real source URLs.
+- Share metadata and generated social imagery are part of launch readiness.
+- The community feature remains async and moderated, not realtime chat.
+
+## ADR-0007: Require Service-Role Server Access for Launch
+
+Date: 2026-05-09
+
+Status: Accepted
+
+Decision: Launch-grade Supabase reads and writes require `SUPABASE_SERVICE_ROLE_KEY` on the server. The publishable-key plus server-secret RPC path is legacy fallback only and must be explicitly opted into outside launch.
+
+Context: Supabase advisors flagged anonymous visibility for raw public tables and public-callable `SECURITY DEFINER` RPCs. Even when secret-guarded, that is below the launch bar.
+
+Consequences:
+
+- Public users interact with Next.js routes, not raw Supabase tables or RPCs.
+- Missing service-role credentials disable database-backed writes instead of exposing fallback RPCs.
+- The launch hardening migration revokes public table/RPC grants after compatible Vercel env vars and deployment are in place.

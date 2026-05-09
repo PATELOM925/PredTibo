@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,15 +14,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PredTibo",
-  description: "A fan-made Codex milestone prediction app.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://predtibo.vercel.app"),
+  title: {
+    default: "PredTibo - Codex Reset Weather",
+    template: "%s | PredTibo",
+  },
+  description:
+    "A fan-made daily public-signal forecast for Codex reset and limit-change speculation. Not official OpenAI data.",
   icons: {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "PredTibo",
-    description: "Guess the next visible Codex adoption moment.",
+    title: "PredTibo - Codex Reset Weather",
+    description: "Check today's Codex reset-weather score, receipts, and community calls.",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PredTibo - Codex Reset Weather",
+    description: "Daily fan forecast for Codex public reset and limit-change signals.",
   },
 };
 
@@ -46,7 +57,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
